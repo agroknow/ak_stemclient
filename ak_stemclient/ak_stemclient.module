@@ -1,0 +1,212 @@
+<?php
+
+ /**
+ * @file
+ * Provides a client for requests.
+ *
+ * @copyright Copyright(c) 2012 Previous Next Pty Ltd
+ * @license GPL v2 http://www.fsf.org/licensing/licenses/gpl.html
+ * @author Chris Skene chris at previousnext dot com dot au
+ */
+
+$list_req=array();
+ 
+function ak_stemclient_menu() {
+  $items = array();
+  
+$items['client-requests-service'] = array( //this creates a URL that will call this form at "examples/form-example"
+    'title' => 'Collection Requests Client', //page title
+    'description' => 'A form to mess around with.',
+    'page callback' => 'drupal_get_form', //this is the function that will be called when the page is accessed.  for a form, use drupal_get_form
+    'page arguments' => array('ak_stemclient_form'), //put the name of the form here
+    'access callback' => TRUE
+  );
+  return $items;
+}
+
+
+function ak_stemclient_form($form, &$form_state) {
+ $form['nid'] = array(
+    '#type' => 'textfield', //you can find a list of available types in the form api
+    '#title' => 'Node ID',
+    '#size' => 7,
+    '#maxlength' => 50,
+    '#required' => TRUE, //make this field required
+  );
+
+/*
+ $form['ni'] = array(
+       '#type' => 'select',
+       '#title' => t('Node'),
+       '#options' => $list_req,
+        '#required' => TRUE,
+       '#description' => t('Set this to <em>Done</em> if you would like this status to be pending by default.</br>' . get_requests()),
+   );
+*/
+
+
+ $form['title'] = array(
+    '#type' => 'textfield', //you can find a list of available types in the form api
+    '#title' => 'Title',
+    '#size' => 70,
+    '#maxlength' => 120,
+    '#required' => TRUE, //make this field required
+  );
+
+
+
+
+
+
+
+
+ $form['description'] = array(
+    '#type' => 'textarea', //you can find a list of available types in the form api
+    '#title' => 'Description',
+    '#size' => 100,
+    '#maxlength' => 150,
+    '#required' => FALSE, //make this field required
+  );
+ $form['status'] = array(
+       '#type' => 'select',
+       '#title' => t('Status'),
+       '#options' => array(
+          '0' => 'Done',
+          '1' => 'Pending',
+       ),
+        '#required' => TRUE,
+       '#description' => t('Set this to <em>Done</em> if you would like this status to be pending by default.</br>' . get_requests()),
+   ); 
+$form['submit_button'] = array(
+    '#type' => 'submit',
+    '#value' => t('Submit!'),
+  );
+  
+  return $form;
+}
+
+function ak_stemclient_form_submit($form, &$form_state) {
+   
+  global $user;
+  if ($user->uid ) {
+      post($form_state['values']['nid'],$form_state['values']['title'],$form_state['values']['status'],$form_state['values']['description']);
+  }else {
+   die("please login");
+  }
+}
+
+//https://api.drupal.org/api/drupal/modules%21user%21user.module/7 //http://www.apaddedcell.com/an-introduction-user-stats-module-drupal function 
+function fetch_requests(&$url,&$user){
+    
+ 		// $users = entity_load('user');// $arrayuids = array_keys($users);
+     if($user->uid){
+      $uid=$user->uid;
+     // fetch_requests();
+       post_fiware($url,$uid,$ip); //call post fnc to orion context broker
+     }//end if
+   curl_close($ch); // Close request to clear up some resources
+ return;
+ 
+} 
+
+
+function get_requests(){
+   $statusArr = array("0"=>"Done", "1"=>"Pending");
+   $view_req = "http://tap.agroknow.com/rest/views/requests_for_collections";
+   $context  = stream_context_create(array('http' => array('header' => 'Accept: application/xml')));
+$xml = file_get_contents($view_req, false, $context);
+$xml = simplexml_load_string($xml);
+//print_r($xml);
+$list_req="";
+$q=0;
+   $req = "<table>";
+      $req = "<tr><b>Title | Node Id | Status | Date Created | Date Modified</b><hr></tr></br>";
+        foreach ($xml as $v) {
+          $list_req[q]=$v->nid; 
+       // if ($v->type == 'requests'){
+              // $req .= $v->title . " ";
+              $req .= "<tr>" . $v->nid . " ";
+              $req .= $v->status . " ";// . "</tr></br>";
+              $req .= $v->post_date . " " ;
+              $req .= $v->changed . " "; // ."</tr><hr></br>";
+         // $req .= "<tr>Url: " .  $v->uri ."</tr></br><hr>";
+              $req .= $v->title . " </tr></br>";
+       // }
+        $req .= "</table>";
+        $q++;
+     }   
+
+
+
+/* try {
+  // 'my_connection' is the machine name of the connection.
+  $result = clients_connection_call('requests_from_tap', 'node', 'GET');
+  // for ( $i= 0; $i < sizeof( $result); $i++ ){
+  // $sel_arr = array( $i => $result[i]->nid );
+  // }
+      $req = "<table>";
+      $req = "<tr><b>Title | Node Id | Status | Date Created | Date Modified</b><hr></tr></br>";
+        foreach ($result as $v) {
+         if ($v->type == 'requests'){
+              // $req .= $v->title . " ";
+              $req .= "<tr>" . $v->nid . " ";
+              $req .= $statusArr[ $v->status ] . " ";// . "</tr></br>";
+              $req .= $v->created . " " ;
+             $req .= $v->changed . " "; // ."</tr><hr></br>";
+         // $req .= "<tr>Url: " .  $v->uri ."</tr></br><hr>";
+             $req .= $v->title . " </tr></br>";
+        }
+        $req .= "</table>";
+      }
+     }catch (Exception $e) {
+  // Something went wrong; it's up to you to display an error.
+  // This is the error message, if any:
+  $message = $e->getMessage();
+  }*/
+ return $req;
+}
+
+
+function post(&$node,&$title,&$status,&$description){
+  // $node="1151";
+     $url="http://tap.agroknow.com/rest/node/" . $node;
+ /*
+  $data = "{
+    \"type\":\"requests\",
+    \"title\":\"TITLE HERE update 1151 \",
+    \"field_status\":{\"und\":{\"0\":{\"value\":\"Done\"}}}
+   }";
+  */
+    $setStatus = array("0"=>"Done", "1"=>"Pending");
+   // $data = array( 'title' => 'UserTrack','type' => 'requests',);
+   // $data = json_encode($data);
+/*  
+//  $data = "<?xml version=\"1.0\" encoding=\"utf-8\"?>*/
+//die($status);
+ $data ='<node><body><und is_array="true"><item><value>' . $description. '</value></item></und></body><title>' . $title  .'</title><type>requests</type><field_status><item>' . $setStatus[ $status ] . '</item></field_status></node>';
+/*
+ $data ='<node><body><und is_array="true"><item><value>' . $description. '</value></item></und></body><title>' . $title  .'</title></node>';
+*/
+ $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch,CURLOPT_USERPWD,"stem:stem"); //curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+  ////  curl_setopt($ch, CURLOPT_PUT, 1); 
+//curl_setopt($ch, CURLOPT_HTTPHEADER, array('X-HTTP-Method-Override: PUT'));
+    curl_setopt($ch, CURLOPT_HTTPHEADER,
+        array (
+        "X-HTTP-Method-Override: PUT",
+        "Accept: application/xml",
+        "Content-type: application/xml",
+        'X-CSRF-Token: 5FZ4VcIXGnAzo5-eqwCAfVtLKDRT-TTgcHW-Ou8dqjg'
+        ));
+    curl_setopt( $ch, CURLOPT_POSTFIELDS, $data );
+    $ce = curl_exec($ch);
+   curl_close($ch); //
+//   die($ce);
+drupal_set_message(t('Node ' . $node  . ' updated ' . ' to status ' . $status . ' Other messages: ' .  $ce));
+// watchdog( 'Node ' . $node  . ' updated ' . 'to status ' . $status , $variables = NULL, $severity = WATCHDOG_NOTICE, $link = NULL );
+
+
+
+   return;
+}

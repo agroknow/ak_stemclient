@@ -1,0 +1,13 @@
+name = "A Client for Collection Requests"
+description = "A Client to drupal services in order to read collection requests."
+
+; Core version (required)
+core = 7.x
+
+//dependencies[] = xautoload
+; Information added by drupal.org packaging script on 2015-10-20
+version = "7.x-1.0-beta2"
+core = "7.x"
+project = "ak_stemclient"
+datestamp = "1367841012"
+
